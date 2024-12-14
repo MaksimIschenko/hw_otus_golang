@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/beaconsoftwarellc/gadget/stringutil"
+	"github.com/beaconsoftwarellc/gadget/stringutil" //nolint
 )
 
 func main() {
