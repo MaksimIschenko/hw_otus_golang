@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/stretchr/testify/require" //nolint
+	"github.com/stretchr/testify/require"
 )
 
 func TestIsLetterOrNewString(t *testing.T) {
