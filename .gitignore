@@ -26,3 +26,6 @@ ehthumbs.db
 Thumbs.db
 .vscode/
 *.bak
+
+# Ignore all go.sum files
+# **/go.sum
