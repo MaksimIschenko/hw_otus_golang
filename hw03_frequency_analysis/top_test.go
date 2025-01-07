@@ -7,7 +7,7 @@ import (
 )
 
 // Change to true if needed.
-var taskWithAsteriskIsCompleted = false
+var taskWithAsteriskIsCompleted = true
 
 var text = `Как видите, он  спускается  по  лестнице  вслед  за  своим
 	другом   Кристофером   Робином,   головой   вниз,  пересчитывая
@@ -48,6 +48,24 @@ func TestTop10(t *testing.T) {
 		require.Len(t, Top10(""), 0)
 	})
 
+	t.Run("single word", func(t *testing.T) {
+		text := "otus"
+		expected := []string{"otus"}
+		require.Equal(t, expected, Top10(text))
+	})
+
+	t.Run("repeated words", func(t *testing.T) {
+		text := "otus otus otus"
+		expected := []string{"otus"}
+		require.Equal(t, expected, Top10(text))
+	})
+
+	t.Run("words with Chinese characters and emojis", func(t *testing.T) {
+		text := "Hello, world! 你好，世界! 🌍🌎🌏 Hello! Привет, мир!"
+		expected := []string{"hello", "world", "мир", "привет", "你好，世界"}
+		require.Equal(t, expected, Top10(text))
+	})
+
 	t.Run("positive test", func(t *testing.T) {
 		if taskWithAsteriskIsCompleted {
 			expected := []string{
@@ -78,5 +96,27 @@ func TestTop10(t *testing.T) {
 			}
 			require.Equal(t, expected, Top10(text))
 		}
+	})
+}
+
+func TestPrepareText(t *testing.T) {
+	t.Run("empty string to prepare", func(t *testing.T) {
+		expected := []string{}
+		require.Equal(t, expected, PrepareText(""))
+	})
+
+	t.Run("simple case", func(t *testing.T) {
+		expected := []string{"simple", "case"}
+		require.Equal(t, expected, PrepareText("simple case"))
+	})
+
+	t.Run("with marks and spaces", func(t *testing.T) {
+		expected := []string{"with", "mark", "and", "spaces"}
+		require.Equal(t, expected, PrepareText("with!     ,\"mark!\" and   ,,,,,,spaces"))
+	})
+
+	t.Run("only marks", func(t *testing.T) {
+		expected := []string{}
+		require.Equal(t, expected, PrepareText("! - <,\"!\""))
 	})
 }
