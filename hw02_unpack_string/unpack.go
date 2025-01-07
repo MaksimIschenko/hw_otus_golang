@@ -9,66 +9,64 @@ import (
 
 var ErrInvalidString = errors.New("invalid string")
 
-func IsLetterOrNewString(r rune) bool {
-	return unicode.IsLetter(r) || string(r) == "\n"
-}
-
-func IsContainAllowedSymbols(inputStr string) bool {
-	for _, r := range inputStr {
-		isLetter := IsLetterOrNewString(r)
-		isDigit := unicode.IsDigit(r)
-		if !isLetter && !isDigit {
-			return false
-		}
-	}
-	return true
-}
-
 func Unpack(inputStr string) (string, error) {
 	if inputStr == "" {
 		return "", nil
 	}
-	if !IsContainAllowedSymbols(inputStr) {
-		return "", ErrInvalidString
-	}
 
 	var sb strings.Builder
 
-	var curSymb, prevSymb rune
+	toSkip := false
+
+	var prevRune rune
 
 	for idx, r := range inputStr {
 		if idx == 0 {
 			if unicode.IsDigit(r) {
 				return "", ErrInvalidString
 			}
-			prevSymb = r
+		}
+
+		if r == '\\' {
+			toSkip = true
 			continue
 		}
 
-		curSymb = r
-		switch {
-		case IsLetterOrNewString(prevSymb) && IsLetterOrNewString(curSymb):
-			sb.WriteString(string(prevSymb))
-			prevSymb = curSymb
-		case IsLetterOrNewString(prevSymb) && unicode.IsDigit(curSymb):
-			count, err := strconv.Atoi(string(curSymb))
+		if toSkip {
+			sb.WriteRune(r)
+			prevRune = 0
+			toSkip = false
+			continue
+		}
+
+		if unicode.IsDigit(r) {
+			if prevRune == 0 {
+				return "", ErrInvalidString
+			}
+			count, err := strconv.Atoi(string(r))
 			if err != nil {
 				return "", ErrInvalidString
 			}
-			for ; count > 0; count-- {
-				sb.WriteString(string(prevSymb))
+			if count == 0 {
+				DeleteLastRune(&sb)
 			}
-			prevSymb = curSymb
-		case unicode.IsDigit(prevSymb) && IsLetterOrNewString(curSymb):
-			prevSymb = curSymb
-		case unicode.IsDigit(prevSymb) && unicode.IsDigit(curSymb):
-			return "", ErrInvalidString
+			for ; count > 1; count-- {
+				sb.WriteRune(prevRune)
+			}
+			prevRune = 0
+		} else {
+			sb.WriteRune(r)
+			prevRune = r
 		}
 	}
-
-	if IsLetterOrNewString(curSymb) {
-		sb.WriteString(string(curSymb))
-	}
-
 	return sb.String(), nil
+}
+
+func DeleteLastRune(sb *strings.Builder) {
+	str := sb.String()
+	if len(str) > 0 {
+		str = str[:len(str)-1]
+	}
+	sb.Reset()
+	sb.WriteString(str)
 }
