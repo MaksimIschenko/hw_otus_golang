@@ -9,13 +9,13 @@ import (
 // Regex for proccesing text.
 var (
 	reSpace = regexp.MustCompile(`\s+`)
-	reMarks = regexp.MustCompile(`^[^a-zA-Zа-яА-Я]*|[^a-zA-Zа-яА-Я]*$`)
+	reMarks = regexp.MustCompile(`^[\p{P}\p{S}]*|[\p{P}\p{S}]*$`)
 )
 
 // Find 10 most used words per text.
 func Top10(text string) []string {
 	splitted := PrepareText(text)
-	wordMap := make(map[string]int, len(splitted)/2)
+	wordMap := make(map[string]int)
 	maxCount := 0
 	for _, word := range splitted {
 		if word == "" || word == "-" {
@@ -28,7 +28,7 @@ func Top10(text string) []string {
 	}
 	result := []string{}
 	for maxCount > 0 {
-		s := make([]string, 0, 10)
+		s := []string{}
 		for word, count := range wordMap {
 			if count == maxCount {
 				s = append(s, word)
@@ -37,9 +37,12 @@ func Top10(text string) []string {
 		sort.Strings(s)
 		result = append(result, s...)
 		maxCount--
+		if len(result) >= 10 {
+			break
+		}
 	}
 	if len(result) > 10 {
-		return result[0:10]
+		return result[:10]
 	}
 	return result
 }

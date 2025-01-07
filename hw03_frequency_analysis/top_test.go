@@ -60,6 +60,12 @@ func TestTop10(t *testing.T) {
 		require.Equal(t, expected, Top10(text))
 	})
 
+	t.Run("words with Chinese characters and emojis", func(t *testing.T) {
+		text := "Hello, world! 你好，世界! 🌍🌎🌏 Hello! Привет, мир!"
+		expected := []string{"hello", "world", "мир", "привет", "你好，世界"}
+		require.Equal(t, expected, Top10(text))
+	})
+
 	t.Run("positive test", func(t *testing.T) {
 		if taskWithAsteriskIsCompleted {
 			expected := []string{
