@@ -25,7 +25,7 @@ type list struct {
 }
 
 // create a new list (unexported).
-func NewList() *list {
+func NewList() List {
 	return &list{}
 }
 
