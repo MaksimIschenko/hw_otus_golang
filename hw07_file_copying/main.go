@@ -3,12 +3,18 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
+	"os"
+
+	"github.com/MaksimIschenko/hw_otus_golang/hw07_file_copying/copyfile"
 )
 
 var (
 	from, to      string
 	limit, offset int64
 )
+
+var logger = log.New(os.Stdout, "copyfile: ", log.LstdFlags)
 
 func init() {
 	flag.StringVar(&from, "from", "", "file to read from")
@@ -20,8 +26,12 @@ func init() {
 func main() {
 	flag.Parse()
 
-	fmt.Printf("from: %v\n", from)
-	fmt.Printf("to: %v\n", to)
-	fmt.Printf("limit: %v\n", limit)
-	fmt.Printf("offset: %v\n", offset)
+	logger.Println("Starting copyfile")
+
+	err := copyfile.Copy(from, to, offset, limit)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	logger.Println("Finishing copyfile")
 }
