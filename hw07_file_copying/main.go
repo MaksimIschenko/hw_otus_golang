@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 )
 
 var (
@@ -18,5 +19,9 @@ func init() {
 
 func main() {
 	flag.Parse()
-	// Place your code here.
+
+	fmt.Printf("from: %v\n", from)
+	fmt.Printf("to: %v\n", to)
+	fmt.Printf("limit: %v\n", limit)
+	fmt.Printf("offset: %v\n", offset)
 }
