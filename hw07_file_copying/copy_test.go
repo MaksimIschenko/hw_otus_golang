@@ -1,4 +1,4 @@
-package copyfile
+package main
 
 import "testing"
 
