@@ -25,6 +25,7 @@ linters-settings:
         allow:
           - $gostd
           - github.com/stretchr/testify
+          - github.com/MaksimIschenko/hw_otus_golang/hw08_envdir_tool/envreader
 
 issues:
   exclude-rules:
