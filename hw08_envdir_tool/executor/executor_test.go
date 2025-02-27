@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io"
 	"os"
+	"sync"
 	"testing"
 
 	"github.com/MaksimIschenko/hw_otus_golang/hw08_envdir_tool/envreader"
@@ -64,15 +65,24 @@ func TestRunCmd_Failure(t *testing.T) {
 		wStderr.Close()
 	}()
 
+	var wg sync.WaitGroup
+	wg.Add(2)
 	go func() {
+		defer wg.Done()
 		io.Copy(&stdout, rStdout)
 	}()
 	go func() {
+		defer wg.Done()
 		io.Copy(&stderr, rStderr)
 	}()
 
 	cmd := []string{"nonexistent_command"}
 	exitCode := RunCmd(cmd, env)
+
+	wStdout.Close()
+	wStderr.Close()
+
+	wg.Wait()
 
 	require.Equal(t, ERR, exitCode)
 	require.Empty(t, stdout.String())
