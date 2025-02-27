@@ -17,8 +17,8 @@ type EnvValue struct {
 	NeedRemove bool
 }
 
-// processBytes removes trailing spaces and replaces null bytes with newlines.
-func processBytes(data []byte) []byte {
+// ProcessBytes removes trailing spaces and replaces null bytes with newlines.
+func ProcessBytes(data []byte) []byte {
 	data = bytes.TrimRight(data, " \t")
 	data = bytes.ReplaceAll(data, []byte{0x00}, []byte("\n"))
 	return data
@@ -31,7 +31,7 @@ func readEnvFile(f *os.File) (string, error) {
 	if err != nil && !errors.Is(err, io.EOF) {
 		return "", fmt.Errorf("error reading file: %w", err)
 	}
-	line = processBytes(line)
+	line = ProcessBytes(line)
 	return string(line), nil
 }
 
