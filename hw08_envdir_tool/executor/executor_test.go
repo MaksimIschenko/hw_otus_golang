@@ -31,15 +31,24 @@ func TestRunCmd_Success(t *testing.T) {
 		wStderr.Close()
 	}()
 
+	var wg sync.WaitGroup
+	wg.Add(2)
 	go func() {
+		defer wg.Done()
 		io.Copy(&stdout, rStdout)
 	}()
 	go func() {
+		defer wg.Done()
 		io.Copy(&stderr, rStderr)
 	}()
 
 	cmd := []string{"echo", "Hello World"}
 	exitCode := RunCmd(cmd, env)
+
+	wStdout.Close()
+	wStderr.Close()
+
+	wg.Wait()
 
 	require.Equal(t, OK, exitCode)
 	require.Contains(t, stdout.String(), "Hello World")
