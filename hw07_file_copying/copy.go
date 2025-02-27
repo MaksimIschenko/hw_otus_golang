@@ -10,10 +10,6 @@ import (
 )
 
 const (
-	KB = 1024
-	MB = 1024 * KB
-	GB = 1024 * MB
-
 	BarWidth = 100
 )
 
@@ -49,15 +45,15 @@ func CheckArgs(from, to string, offset, limit int64) error {
 func CheckFile(fromPath string) (os.FileInfo, error) {
 	fileInfo, err := os.Stat(fromPath)
 	if err != nil {
-		return nil, ErrFileNotFound
+		return nil, fmt.Errorf("%w", err)
 	}
 
 	if fileInfo.IsDir() {
 		return nil, ErrUnsupportedFile
 	}
 
-	if fileInfo.Size() == 0 {
-		return nil, ErrUnknownFileSize
+	if fileInfo.Mode()&os.ModeType != 0 {
+		return nil, ErrUnsupportedFile
 	}
 
 	return fileInfo, nil
@@ -78,21 +74,6 @@ func GetFileSize(path string) (int64, error) {
 		return 0, ErrFileNotFound
 	}
 	return fileInfo.Size(), nil
-}
-
-// Get unit and divisor.
-func GetUnit(size int64) (unit string, divisor int64) {
-	switch {
-	case size < KB:
-		unit, divisor = "B", 1
-	case size < MB:
-		unit, divisor = "KB", KB
-	case size < GB:
-		unit, divisor = "MB", MB
-	default:
-		unit, divisor = "GB", GB
-	}
-	return
 }
 
 // Copy file.
@@ -141,19 +122,21 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 		logger.Info("Set file offset", "offset", offset)
 	}
 
-	// Определяем размер копируемых данных
-	fileSize := fileInfo.Size()
-	unit, divisor := GetUnit(fileSize)
+	// Get file size and unit
+	var fileSize int64
+	if limit == 0 {
+		fileSize = fileInfo.Size()
+	} else {
+		fileSize = limit
+	}
 
-	// Создание и запуск прогресс-бара
-	tmpl := fmt.Sprintf(`{{ bar . "[" "=" ">" " " "]"}} {{counters .}} (%s)`, unit)
-	bar := pb.ProgressBarTemplate(tmpl).Start64(fileSize / divisor)
+	// Create progress and start bar
+	tmpl := `{{ bar . "[" "=" ">" " " "]"}} {{counters .}}`
+	bar := pb.ProgressBarTemplate(tmpl).Start64(fileSize)
 	bar.SetMaxWidth(BarWidth)
-
-	// Обертка для обновления прогресс-бара
 	barReader := bar.NewProxyReader(fromFile)
 
-	// Копирование данных
+	// Copy file
 	if limit == 0 {
 		_, err = io.Copy(toFile, barReader)
 	} else {
@@ -165,11 +148,14 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 			logger.Info("EOF reached")
 		} else {
 			logger.Error("Error during file copy", "error", err)
+			errRemove := os.Remove(toPath)
+			if errRemove != nil {
+				logger.Error("Error removing destination file", "error", errRemove)
+			}
 			return ErrCopyFile
 		}
 	}
 
-	// Завершаем прогресс-бар
 	bar.Finish()
 	logger.Info("File copied successfully", "from", fromPath, "to", toPath)
 

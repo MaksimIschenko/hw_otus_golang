@@ -116,7 +116,7 @@ func TestErrArgs(t *testing.T) {
 			correctPath: "testdata/out_offset0_limit0.txt",
 			offset:      0,
 			limit:       0,
-			expectedErr: ErrFileNotFound,
+			expectedErr: os.ErrNotExist,
 		},
 		{
 			name:        "unknown file size",
@@ -125,7 +125,7 @@ func TestErrArgs(t *testing.T) {
 			correctPath: "testdata/out_offset0_limit0.txt",
 			offset:      0,
 			limit:       0,
-			expectedErr: ErrUnknownFileSize,
+			expectedErr: ErrUnsupportedFile,
 		},
 		// {
 		// 	name: "error reading file",
@@ -174,7 +174,7 @@ func TestErrArgs(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := Copy(tt.fromPath, tt.toPath, tt.offset, tt.limit)
-			require.Equal(t, tt.expectedErr, err)
+			require.ErrorIs(t, err, tt.expectedErr)
 		})
 	}
 }
@@ -264,47 +264,6 @@ func TestGetFileSize(t *testing.T) {
 			size, err := GetFileSize(tt.path)
 			require.Equal(t, tt.expected, size)
 			require.Equal(t, tt.expectedErr, err)
-		})
-	}
-}
-
-func TestGetUnit(t *testing.T) {
-	type expectedUnit struct {
-		unit    string
-		divisor int64
-	}
-	tests := []struct {
-		name     string
-		size     int64
-		expected expectedUnit
-	}{
-		{
-			name:     "bytes",
-			size:     1,
-			expected: expectedUnit{"B", 1},
-		},
-		{
-			name:     "kilobytes",
-			size:     1024 + 1,
-			expected: expectedUnit{"KB", 1024},
-		},
-		{
-			name:     "megabytes",
-			size:     1024*1024 + 1,
-			expected: expectedUnit{"MB", 1024 * 1024},
-		},
-		{
-			name:     "gigabytes",
-			size:     1024*1024*1024 + 1,
-			expected: expectedUnit{"GB", 1024 * 1024 * 1024},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			unit, divisor := GetUnit(tt.size)
-			require.Equal(t, tt.expected.unit, unit)
-			require.Equal(t, tt.expected.divisor, divisor)
 		})
 	}
 }
