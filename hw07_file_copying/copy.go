@@ -81,7 +81,7 @@ func GetFileSize(path string) (int64, error) {
 }
 
 // Get unit and divisor.
-func getUnit(size int64) (unit string, divisor int64) {
+func GetUnit(size int64) (unit string, divisor int64) {
 	switch {
 	case size < KB:
 		unit, divisor = "B", 1
@@ -98,6 +98,7 @@ func getUnit(size int64) (unit string, divisor int64) {
 // Copy file.
 func Copy(fromPath, toPath string, offset, limit int64) error {
 	if err := CheckArgs(fromPath, toPath, offset, limit); err != nil {
+		logger.Error("Error validating arguments", "error", err)
 		return err
 	}
 	logger.Info("Arguments validated", "from", fromPath, "to", toPath, "offset", offset, "limit", limit)
@@ -142,7 +143,7 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 
 	// Определяем размер копируемых данных
 	fileSize := fileInfo.Size()
-	unit, divisor := getUnit(fileSize)
+	unit, divisor := GetUnit(fileSize)
 
 	// Создание и запуск прогресс-бара
 	tmpl := fmt.Sprintf(`{{ bar . "[" "=" ">" " " "]"}} {{counters .}} (%s)`, unit)
