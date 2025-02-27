@@ -17,21 +17,21 @@ type EnvValue struct {
 	NeedRemove bool
 }
 
+// processBytes removes trailing spaces and replaces null bytes with newlines.
 func processBytes(data []byte) []byte {
 	data = bytes.TrimRight(data, " \t")
 	data = bytes.ReplaceAll(data, []byte{0x00}, []byte("\n"))
 	return data
 }
 
+// readEnvFile reads the first line from the file and returns it.
 func readEnvFile(f *os.File) (string, error) {
 	r := bufio.NewReader(f)
-	count := 0
 	line, _, err := r.ReadLine()
 	if err != nil && !errors.Is(err, io.EOF) {
 		return "", fmt.Errorf("error reading file: %w", err)
 	}
 	line = processBytes(line)
-	count++
 	return string(line), nil
 }
 
