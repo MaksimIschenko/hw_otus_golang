@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io"
 	"os"
+	"path/filepath"
 
 	pb "github.com/cheggaaa/pb/v3"
 )
@@ -17,6 +18,19 @@ var (
 	ErrOffsetExceedsFileSize = errors.New("offset exceeds file size")
 )
 
+// ComparePaths compares two paths.
+func ComparePaths(path1, path2 string) (bool, error) {
+	absPath1, err := filepath.Abs(path1)
+	if err != nil {
+		return false, err
+	}
+	absPath2, err := filepath.Abs(path2)
+	if err != nil {
+		return false, err
+	}
+	return absPath1 == absPath2, nil
+}
+
 // Check arguments.
 func CheckArgs(from, to string, offset, limit int64) error {
 	if from == "" {
@@ -25,6 +39,15 @@ func CheckArgs(from, to string, offset, limit int64) error {
 	if to == "" {
 		return errors.New("destination file path is empty")
 	}
+
+	samePath, err := ComparePaths(from, to)
+	if err != nil {
+		return err
+	}
+	if samePath {
+		return errors.New("source and destination file paths are same. Must be different")
+	}
+
 	if offset < 0 {
 		return errors.New("offset cannot be negative")
 	}

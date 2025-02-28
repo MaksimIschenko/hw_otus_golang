@@ -267,3 +267,36 @@ func TestGetFileSize(t *testing.T) {
 		})
 	}
 }
+
+func TestComparePaths(t *testing.T) {
+	tests := []struct {
+		name        string
+		path1       string
+		path2       string
+		expected    bool
+		expectedErr error
+	}{
+		{
+			name:        "same paths",
+			path1:       "testdata/input.txt",
+			path2:       "testdata/input.txt",
+			expected:    true,
+			expectedErr: nil,
+		},
+		{
+			name:        "different paths",
+			path1:       "testdata/input.txt",
+			path2:       "testdata/out_offset0_limit0.txt",
+			expected:    false,
+			expectedErr: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			same, err := ComparePaths(tt.path1, tt.path2)
+			require.Equal(t, tt.expected, same)
+			require.Equal(t, tt.expectedErr, err)
+		})
+	}
+}
