@@ -17,12 +17,16 @@ linters-settings:
         allow:
           - $gostd
           - github.com/cheggaaa/pb/v3
+          - github.com/MaksimIschenko/hw_otus_golang/hw08_envdir_tool/envreader
+          - github.com/MaksimIschenko/hw_otus_golang/hw08_envdir_tool/executor
+          - github.com/spf13/pflag
       Test:
         files:
           - $test
         allow:
           - $gostd
           - github.com/stretchr/testify
+          - github.com/MaksimIschenko/hw_otus_golang/hw08_envdir_tool/envreader
 
 issues:
   exclude-rules:
