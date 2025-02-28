@@ -255,7 +255,7 @@ func TestGetFileSize(t *testing.T) {
 			name:        "file not found",
 			path:        "testdata/notfound.txt",
 			expected:    0,
-			expectedErr: ErrFileNotFound,
+			expectedErr: os.ErrNotExist,
 		},
 	}
 
@@ -263,7 +263,7 @@ func TestGetFileSize(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			size, err := GetFileSize(tt.path)
 			require.Equal(t, tt.expected, size)
-			require.Equal(t, tt.expectedErr, err)
+			require.ErrorIs(t, err, tt.expectedErr)
 		})
 	}
 }

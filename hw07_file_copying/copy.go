@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"os"
 
@@ -16,12 +15,6 @@ const (
 var (
 	ErrUnsupportedFile       = errors.New("unsupported file")
 	ErrOffsetExceedsFileSize = errors.New("offset exceeds file size")
-	ErrFileNotFound          = errors.New("file not found")
-	ErrUnknownFileSize       = errors.New("unknown file size")
-	ErrReadFile              = errors.New("error reading file")
-	ErrWriteFile             = errors.New("error writing file")
-	ErrSeekFile              = errors.New("error seeking file")
-	ErrCopyFile              = errors.New("error copying file")
 )
 
 // Check arguments.
@@ -45,7 +38,7 @@ func CheckArgs(from, to string, offset, limit int64) error {
 func CheckFile(fromPath string) (os.FileInfo, error) {
 	fileInfo, err := os.Stat(fromPath)
 	if err != nil {
-		return nil, fmt.Errorf("%w", err)
+		return nil, err
 	}
 
 	if fileInfo.IsDir() {
@@ -71,7 +64,7 @@ func CheckOffset(fileInfo os.FileInfo, offset int64) error {
 func GetFileSize(path string) (int64, error) {
 	fileInfo, err := os.Stat(path)
 	if err != nil {
-		return 0, ErrFileNotFound
+		return 0, err
 	}
 	return fileInfo.Size(), nil
 }
@@ -95,7 +88,7 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 	fromFile, err := os.Open(fromPath)
 	if err != nil {
 		logger.Error("Error opening source file", "error", err)
-		return ErrReadFile
+		return err
 	}
 	defer fromFile.Close()
 	logger.Info("Opened source file", "path", fromPath)
@@ -104,7 +97,7 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 	toFile, err := os.Create(toPath)
 	if err != nil {
 		logger.Error("Error creating destination file", "error", err)
-		return ErrWriteFile
+		return err
 	}
 	defer toFile.Close()
 	logger.Info("Created destination file", "path", toPath)
@@ -117,7 +110,7 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 		}
 		if _, err := fromFile.Seek(offset, io.SeekStart); err != nil {
 			logger.Error("Error setting file offset", "error", err)
-			return ErrSeekFile
+			return err
 		}
 		logger.Info("Set file offset", "offset", offset)
 	}
@@ -152,7 +145,7 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 			if errRemove != nil {
 				logger.Error("Error removing destination file", "error", errRemove)
 			}
-			return ErrCopyFile
+			return err
 		}
 	}
 
