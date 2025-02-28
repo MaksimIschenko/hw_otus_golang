@@ -2,12 +2,17 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"log/slog"
+	"os"
 )
 
 var (
 	from, to      string
 	limit, offset int64
 )
+
+var logger = slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
 
 func init() {
 	flag.StringVar(&from, "from", "", "file to read from")
@@ -18,5 +23,13 @@ func init() {
 
 func main() {
 	flag.Parse()
-	// Place your code here.
+
+	logger.Info("Starting copyfile")
+
+	err := Copy(from, to, offset, limit)
+	if err != nil {
+		logger.Error(fmt.Sprintf("%v", err))
+	}
+
+	logger.Info("Finishing copyfile")
 }
