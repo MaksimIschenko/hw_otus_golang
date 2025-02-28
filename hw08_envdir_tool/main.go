@@ -3,7 +3,6 @@ package main
 import (
 	"log/slog"
 	"os"
-	"sync"
 
 	"github.com/MaksimIschenko/hw_otus_golang/hw08_envdir_tool/envreader"
 	"github.com/MaksimIschenko/hw_otus_golang/hw08_envdir_tool/executor"
@@ -14,7 +13,6 @@ var (
 	pathToEnvDir string
 	cmd          []string
 
-	wg     sync.WaitGroup
 	logger = slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
 )
 
@@ -39,14 +37,9 @@ func main() {
 	}
 
 	// Execute command
-	wg.Add(1)
-	go func() {
-		returnCode := executor.RunCmd(cmd, environment)
-		if returnCode != executor.OK {
-			logger.Error("error executing command")
-			os.Exit(1)
-		}
-		wg.Done()
-	}()
-	wg.Wait()
+	returnCode := executor.RunCmd(cmd, environment)
+	if returnCode != executor.OK {
+		logger.Error("error executing command")
+		os.Exit(1)
+	}
 }

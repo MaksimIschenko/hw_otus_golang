@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 )
 
 type Environment map[string]EnvValue
@@ -53,6 +54,9 @@ func ReadDir(dir string) (Environment, error) {
 			for k, v := range _envMap {
 				envMap[k] = v
 			}
+		}
+		if strings.Contains(file.Name(), "=") {
+			continue
 		}
 		f, err := os.Open(fmt.Sprintf("%s/%s", dir, file.Name()))
 		if err != nil {

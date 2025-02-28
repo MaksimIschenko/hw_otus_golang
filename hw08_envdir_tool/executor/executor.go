@@ -1,6 +1,7 @@
 package executor
 
 import (
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -40,6 +41,10 @@ func RunCmd(cmd []string, env envreader.Environment) (returnCode int) {
 	// Wait for command to finish
 	err = execCmd.Wait()
 	if err != nil {
+		var exitErr *exec.ExitError
+		if ok := errors.As(err, &exitErr); ok {
+			return exitErr.ExitCode()
+		}
 		return ERR
 	}
 
