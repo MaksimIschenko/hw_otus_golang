@@ -116,16 +116,18 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 	}
 
 	// Get file size and unit
-	var fileSize int64
-	if limit == 0 {
-		fileSize = fileInfo.Size()
+	var sizeToCopy int64
+	fileSize := fileInfo.Size()
+	fileSizeWithOffset := fileSize - offset
+	if limit == 0 || limit > fileSizeWithOffset {
+		sizeToCopy = fileSizeWithOffset
 	} else {
-		fileSize = limit
+		sizeToCopy = limit
 	}
 
 	// Create progress and start bar
 	tmpl := `{{ bar . "[" "=" ">" " " "]"}} {{counters .}}`
-	bar := pb.ProgressBarTemplate(tmpl).Start64(fileSize)
+	bar := pb.ProgressBarTemplate(tmpl).Start64(sizeToCopy)
 	bar.SetMaxWidth(BarWidth)
 	barReader := bar.NewProxyReader(fromFile)
 
