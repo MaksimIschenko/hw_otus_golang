@@ -24,7 +24,7 @@ func main() {
 		ID:     "123456789012345678901234567890123456",
 		Name:   "John",
 		Age:    25,
-		Email:  "example@gmail.com",
+		Email:  "examplegmail.com",
 		Role:   "admin",
 		Phones: []string{"+8800553535", "+8800553536"},
 	}

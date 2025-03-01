@@ -173,7 +173,7 @@ func validateMin(value string, field int) error {
 		return fmt.Errorf("invalid value for min rule: %s", value)
 	}
 	if field < valueInt {
-		return fmt.Errorf("expected minimum %s, got %d", value, field)
+		return fmt.Errorf("allowed minimum %s, got %d", value, field)
 	}
 	return nil
 }
@@ -185,7 +185,7 @@ func validateMax(value string, field int) error {
 		return fmt.Errorf("invalid value for max rule: %s", value)
 	}
 	if field > valueInt {
-		return fmt.Errorf("expected maximum %s, got %d", value, field)
+		return fmt.Errorf("allowed maximum %s, got %d", value, field)
 	}
 	return nil
 }
@@ -197,7 +197,7 @@ func validateRegexp(value string, field string) error {
 		return fmt.Errorf("invalid regular expression: %w", err)
 	}
 	if !re.MatchString(field) {
-		return fmt.Errorf("value %q does not match pattern %q", field, value)
+		return fmt.Errorf("%q invalid email", field)
 	}
 	return nil
 }
@@ -221,7 +221,7 @@ func validateIn(value string, field interface{}) error {
 		}
 	}
 	if !found {
-		return fmt.Errorf("value %q is not in %q", field, value)
+		return fmt.Errorf("%q not in allowed values %q", field, value)
 	}
 	return nil
 }

@@ -2,6 +2,7 @@ package validator
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"testing"
 )
@@ -36,25 +37,242 @@ type (
 	}
 )
 
-func TestValidate(t *testing.T) {
+func TestValidate(t *testing.T) { //nolint:funlen
 	tests := []struct {
+		name        string
 		in          interface{}
 		expectedErr error
 	}{
 		{
-			// Place your code here.
+			name: "valid user",
+			in: User{
+				ID:     "000000000000000000000000000000000000", // 36 chars
+				Age:    25,
+				Email:  "valid@example.com",
+				Role:   "admin",
+				Phones: []string{"12345678901"},
+			},
+			expectedErr: nil,
 		},
-		// ...
-		// Place your code here.
+		{
+			name: "invalid user ID length",
+			in: User{
+				ID:     "short",
+				Age:    25,
+				Email:  "valid@example.com",
+				Role:   "admin",
+				Phones: []string{"12345678901"},
+			},
+			expectedErr: ValidationErrors{
+				{Field: "ID", Err: fmt.Errorf("expected length 36, got 5")},
+			},
+		},
+		{
+			name: "invalid user age min",
+			in: User{
+				ID:     "000000000000000000000000000000000000",
+				Age:    17,
+				Email:  "valid@example.com",
+				Role:   "admin",
+				Phones: []string{"12345678901"},
+			},
+			expectedErr: ValidationErrors{
+				{Field: "Age", Err: fmt.Errorf("allowed minimum 18, got 17")},
+			},
+		},
+		{
+			name: "invalid user age max",
+			in: User{
+				ID:     "000000000000000000000000000000000000",
+				Age:    51,
+				Email:  "valid@example.com",
+				Role:   "admin",
+				Phones: []string{"12345678901"},
+			},
+			expectedErr: ValidationErrors{
+				{Field: "Age", Err: fmt.Errorf("allowed maximum 50, got 51")},
+			},
+		},
+		{
+			name: "invalid user email regexp",
+			in: User{
+				ID:     "000000000000000000000000000000000000",
+				Age:    25,
+				Email:  "invalid-email",
+				Role:   "admin",
+				Phones: []string{"12345678901"},
+			},
+			expectedErr: ValidationErrors{
+				{Field: "Email", Err: fmt.Errorf("%q invalid email", "invalid-email")},
+			},
+		},
+		{
+			name: "invalid user role",
+			in: User{
+				ID:     "000000000000000000000000000000000000",
+				Age:    25,
+				Email:  "valid@example.com",
+				Role:   "user",
+				Phones: []string{"12345678901"},
+			},
+			expectedErr: ValidationErrors{
+				{Field: "Role", Err: fmt.Errorf("%q not in allowed values %q", "user", "admin,stuff")},
+			},
+		},
+		{
+			name: "invalid phones length",
+			in: User{
+				ID:     "000000000000000000000000000000000000",
+				Age:    25,
+				Email:  "valid@example.com",
+				Role:   "admin",
+				Phones: []string{"1234567890"},
+			},
+			expectedErr: ValidationErrors{
+				{Field: "Phones", Err: fmt.Errorf("expected length 11, got 10")},
+			},
+		},
+		{
+			name:        "valid app version",
+			in:          App{Version: "1.0.0"},
+			expectedErr: nil,
+		},
+		{
+			name: "invalid app version length",
+			in:   App{Version: "1.0"},
+			expectedErr: ValidationErrors{
+				{Field: "Version", Err: fmt.Errorf("expected length 5, got 3")},
+			},
+		},
+		{
+			name:        "valid response code",
+			in:          Response{Code: 200},
+			expectedErr: nil,
+		},
+		{
+			name: "invalid response code",
+			in:   Response{Code: 400},
+			expectedErr: ValidationErrors{
+				{Field: "Code", Err: fmt.Errorf("%q not in allowed values %q", "400", "200,404,500")},
+			},
+		},
+		{
+			name:        "valid token with no validation",
+			in:          Token{},
+			expectedErr: nil,
+		},
+		{
+			name: "multiple errors in user",
+			in: User{
+				ID:     "short",
+				Age:    17,
+				Email:  "invalid",
+				Role:   "user",
+				Phones: []string{"12345"},
+			},
+			expectedErr: ValidationErrors{
+				{Field: "ID", Err: fmt.Errorf("expected length 36, got 5")},
+				{Field: "Age", Err: fmt.Errorf("allowed minimum 18, got 17")},
+				{Field: "Email", Err: fmt.Errorf("%q invalid email", "invalid")},
+				{Field: "Role", Err: fmt.Errorf("%q not in allowed values %q", "user", "admin,stuff")},
+				{Field: "Phones", Err: fmt.Errorf("expected length 11, got 5")},
+			},
+		},
+		{
+			name: "invalid int in rule",
+			in: struct {
+				Number int `validate:"in:5,10,15"`
+			}{7},
+			expectedErr: ValidationErrors{
+				{Field: "Number", Err: fmt.Errorf("%q not in allowed values %q", "7", "5,10,15")},
+			},
+		},
+		{
+			name: "unsupported rule",
+			in: struct {
+				Field string `validate:"unknown:value"`
+			}{"test"},
+			expectedErr: ValidationErrors{
+				{Field: "Field", Err: fmt.Errorf("unsupported rule: unknown")},
+			},
+		},
+		{
+			name: "invalid rule format",
+			in: struct {
+				Field string `validate:"len|max:5"`
+			}{"test"},
+			expectedErr: ValidationErrors{
+				{
+					Field: "Field", Err: fmt.Errorf("invalid rule: len"),
+				},
+				{
+					Field: "Field", Err: fmt.Errorf("unsupported rule: max"),
+				},
+			},
+		},
+		{
+			name: "invalid min value (non-integer)",
+			in: struct {
+				Age int `validate:"min:abc"`
+			}{20},
+			expectedErr: ValidationErrors{
+				{Field: "Age", Err: fmt.Errorf("invalid value for min rule: abc")},
+			},
+		},
+		{
+			name: "invalid regexp",
+			in: struct {
+				Field string `validate:"regexp:*invalid"`
+			}{"test"},
+			expectedErr: ValidationErrors{
+				{
+					Field: "Field",
+					Err: fmt.Errorf(
+						"invalid regular expression: error parsing regexp: missing argument to repetition operator: `*`",
+					),
+				},
+			},
+		},
 	}
 
-	for i, tt := range tests {
-		t.Run(fmt.Sprintf("case %d", i), func(t *testing.T) {
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 			tt := tt
 			t.Parallel()
 
-			// Place your code here.
-			_ = tt
+			err := Validate(tt.in)
+			if tt.expectedErr == nil {
+				if err != nil {
+					t.Errorf("expected no error, got %v", err)
+				}
+				return
+			}
+
+			if err == nil {
+				t.Fatal("expected error, got nil")
+			}
+
+			var verrs ValidationErrors
+			if !errors.As(err, &verrs) {
+				t.Fatalf("expected ValidationErrors, got %T", err)
+			}
+
+			var expectedErrs ValidationErrors
+			if !errors.As(tt.expectedErr, &expectedErrs) {
+				t.Fatalf("invalid test setup: expectedErr must be ValidationErrors")
+			}
+
+			if len(verrs) != len(expectedErrs) {
+				t.Fatalf("expected %d errors, got %d: %v", len(expectedErrs), len(verrs), verrs)
+			}
+
+			for i, expected := range expectedErrs {
+				actual := verrs[i]
+				if actual.Field != expected.Field || actual.Err.Error() != expected.Err.Error() {
+					t.Errorf("error %d:\nexpected: %s: %v\ngot:      %s: %v",
+						i, expected.Field, expected.Err, actual.Field, actual.Err)
+				}
+			}
 		})
 	}
 }
