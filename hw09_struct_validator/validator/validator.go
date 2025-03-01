@@ -8,19 +8,23 @@ import (
 	"strings"
 )
 
+// Validation error type.
 type ValidationError struct {
 	Field string
 	Err   error
 }
 
+// ValidationErrors is a list of validation errors.
 type ValidationErrors []ValidationError
 
+// Add errors to the validation errors.
 func (v *ValidationErrors) addErrors(fieldName string, errs []error) {
 	for _, err := range errs {
 		*v = append(*v, ValidationError{fieldName, err})
 	}
 }
 
+// Error returns the validation errors as a string.
 func (v ValidationErrors) Error() string {
 	var sb strings.Builder
 	for i, ve := range v {
@@ -35,6 +39,7 @@ func (v ValidationErrors) Error() string {
 	return sb.String()
 }
 
+// Get the values of the field.
 func getValuesField(field reflect.Value) []any {
 	values := make([]any, 0)
 	if field.Kind() == reflect.Slice {
@@ -42,13 +47,13 @@ func getValuesField(field reflect.Value) []any {
 			values = append(values, convertToBaseType(field.Index(i).Interface()))
 		}
 	} else {
-		// Для одиночного значения
 		values = append(values, convertToBaseType(field.Interface()))
 	}
 
 	return values
 }
 
+// Convert the value to the base type.
 func convertToBaseType(value any) any {
 	val := reflect.ValueOf(value)
 	if val.Kind() == reflect.String {
@@ -60,6 +65,7 @@ func convertToBaseType(value any) any {
 	return value
 }
 
+// Validate validates the struct fields.
 func Validate(v any) error {
 	validationErrors := ValidationErrors{}
 	val := reflect.ValueOf(v)
@@ -94,6 +100,7 @@ func Validate(v any) error {
 	return nil
 }
 
+// validateStringField validates the string field.
 func validateStringField(field string, tag string) []error {
 	validateErrors := make([]error, 0)
 	rules := strings.Split(tag, "|")
@@ -124,6 +131,7 @@ func validateStringField(field string, tag string) []error {
 	return validateErrors
 }
 
+// validateIntField validates the integer field.
 func validateIntField(field int, tag string) []error {
 	validateErrors := make([]error, 0)
 	rules := strings.Split(tag, "|")
@@ -202,7 +210,7 @@ func validateRegexp(value string, field string) error {
 	return nil
 }
 
-// validateIn validates the field against a list of values.
+// validateIn validates the field against a list of allowed values.
 func validateIn(value string, field interface{}) error {
 	switch v := field.(type) {
 	case string:
