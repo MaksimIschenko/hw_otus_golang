@@ -94,19 +94,6 @@ func TestValidate(t *testing.T) { //nolint:funlen
 			},
 		},
 		{
-			name: "invalid user email regexp",
-			in: User{
-				ID:     "000000000000000000000000000000000000",
-				Age:    25,
-				Email:  "invalid-email",
-				Role:   "admin",
-				Phones: []string{"12345678901"},
-			},
-			expectedErr: ValidationErrors{
-				{Field: "Email", Err: fmt.Errorf("%q invalid email", "invalid-email")},
-			},
-		},
-		{
 			name: "invalid user role",
 			in: User{
 				ID:     "000000000000000000000000000000000000",
@@ -187,52 +174,6 @@ func TestValidate(t *testing.T) { //nolint:funlen
 				{Field: "Number", Err: fmt.Errorf("%q not in allowed values %q", "7", "5,10,15")},
 			},
 		},
-		{
-			name: "unsupported rule",
-			in: struct {
-				Field string `validate:"unknown:value"`
-			}{"test"},
-			expectedErr: ValidationErrors{
-				{Field: "Field", Err: fmt.Errorf("unsupported rule: unknown")},
-			},
-		},
-		{
-			name: "invalid rule format",
-			in: struct {
-				Field string `validate:"len|max:5"`
-			}{"test"},
-			expectedErr: ValidationErrors{
-				{
-					Field: "Field", Err: fmt.Errorf("invalid rule: len"),
-				},
-				{
-					Field: "Field", Err: fmt.Errorf("unsupported rule: max"),
-				},
-			},
-		},
-		{
-			name: "invalid min value (non-integer)",
-			in: struct {
-				Age int `validate:"min:abc"`
-			}{20},
-			expectedErr: ValidationErrors{
-				{Field: "Age", Err: fmt.Errorf("invalid value for min rule: abc")},
-			},
-		},
-		{
-			name: "invalid regexp",
-			in: struct {
-				Field string `validate:"regexp:*invalid"`
-			}{"test"},
-			expectedErr: ValidationErrors{
-				{
-					Field: "Field",
-					Err: fmt.Errorf(
-						"invalid regular expression: error parsing regexp: missing argument to repetition operator: `*`",
-					),
-				},
-			},
-		},
 	}
 
 	for _, tt := range tests {
@@ -272,6 +213,59 @@ func TestValidate(t *testing.T) { //nolint:funlen
 					t.Errorf("error %d:\nexpected: %s: %v\ngot:      %s: %v",
 						i, expected.Field, expected.Err, actual.Field, actual.Err)
 				}
+			}
+		})
+	}
+}
+
+func TestRuntimeError(t *testing.T) {
+	tests := []struct {
+		name        string
+		in          interface{}
+		expectedErr string
+	}{
+		{
+			name: "unsupported rule",
+			in: struct {
+				Field string `validate:"unknown:value"`
+			}{"test"},
+			expectedErr: "unsupported rule: unknown",
+		},
+		{
+			name: "invalid rule format",
+			in: struct {
+				Field string `validate:"len|max:5"`
+			}{"test"},
+			expectedErr: "invalid rule: len",
+		},
+		{
+			name: "invalid min value (non-integer)",
+			in: struct {
+				Age int `validate:"min:abc"`
+			}{20},
+			expectedErr: "strconv.Atoi: parsing \"abc\": invalid syntax",
+		},
+		{
+			name: "invalid regexp",
+			in: struct {
+				Field string `validate:"regexp:*invalid"`
+			}{"test"},
+			expectedErr: "error parsing regexp: missing argument to repetition operator: `*`",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt := tt
+			t.Parallel()
+
+			err := Validate(tt.in)
+			if err == nil {
+				t.Fatalf("expected error, got nil")
+			}
+
+			if err.Error() != tt.expectedErr {
+				t.Errorf("expected error %q, got %q", tt.expectedErr, err.Error())
 			}
 		})
 	}

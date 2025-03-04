@@ -84,10 +84,16 @@ func Validate(v any) error {
 		for _, value := range values {
 			switch v := value.(type) {
 			case string:
-				fieldErrors := validateStringField(v, tag)
+				fieldErrors, runtimeError := validateStringField(v, tag)
+				if runtimeError != nil {
+					return runtimeError
+				}
 				validationErrors.addErrors(typ.Field(i).Name, fieldErrors)
 			case int:
-				fieldErrors := validateIntField(v, tag)
+				fieldErrors, runtimeError := validateIntField(v, tag)
+				if runtimeError != nil {
+					return runtimeError
+				}
 				validationErrors.addErrors(typ.Field(i).Name, fieldErrors)
 			default:
 				continue
@@ -101,38 +107,49 @@ func Validate(v any) error {
 }
 
 // validateStringField validates the string field.
-func validateStringField(field string, tag string) []error {
-	validateErrors := make([]error, 0)
+func validateStringField(field string, tag string) ([]error, error) {
 	rules := strings.Split(tag, "|")
+	validateErrors := make([]error, 0)
 	for _, rule := range rules {
 		parts := strings.Split(rule, ":")
 		if len(parts) != 2 {
-			validateErrors = append(validateErrors, fmt.Errorf("invalid rule: %s", rule))
-			continue
+			return []error{}, fmt.Errorf("invalid rule: %s", rule)
 		}
 		key, value := parts[0], parts[1]
 		switch key {
 		case "len":
-			if err := validateLen(value, field); err != nil {
-				validateErrors = append(validateErrors, err)
+			validErr, runtimeErr := validateLen(value, field)
+			if runtimeErr != nil {
+				return []error{}, runtimeErr
+			}
+			if validErr != nil {
+				validateErrors = append(validateErrors, validErr)
 			}
 		case "regexp":
-			if err := validateRegexp(value, field); err != nil {
-				validateErrors = append(validateErrors, err)
+			validErr, runtimeErr := validateRegexp(value, field)
+			if runtimeErr != nil {
+				return []error{}, runtimeErr
+			}
+			if validErr != nil {
+				validateErrors = append(validateErrors, validErr)
 			}
 		case "in":
-			if err := validateIn(value, field); err != nil {
-				validateErrors = append(validateErrors, err)
+			validErr, runtimeErr := validateIn(value, field)
+			if runtimeErr != nil {
+				return []error{}, runtimeErr
+			}
+			if validErr != nil {
+				validateErrors = append(validateErrors, validErr)
 			}
 		default:
-			validateErrors = append(validateErrors, fmt.Errorf("unsupported rule: %s", key))
+			return []error{}, fmt.Errorf("unsupported rule: %s", key)
 		}
 	}
-	return validateErrors
+	return validateErrors, nil
 }
 
 // validateIntField validates the integer field.
-func validateIntField(field int, tag string) []error {
+func validateIntField(field int, tag string) ([]error, error) {
 	validateErrors := make([]error, 0)
 	rules := strings.Split(tag, "|")
 	for _, rule := range rules {
@@ -144,81 +161,99 @@ func validateIntField(field int, tag string) []error {
 		key, value := parts[0], parts[1]
 		switch key {
 		case "min":
-			if err := validateMin(value, field); err != nil {
-				validateErrors = append(validateErrors, err)
+			validErr, runtimeErr := validateMin(value, field)
+			if runtimeErr != nil {
+				return []error{}, runtimeErr
 			}
+			if validErr != nil {
+				validateErrors = append(validateErrors, validErr)
+			}
+
 		case "max":
-			if err := validateMax(value, field); err != nil {
-				validateErrors = append(validateErrors, err)
+			validErr, runtimeErr := validateMax(value, field)
+			if runtimeErr != nil {
+				return []error{}, runtimeErr
+			}
+			if validErr != nil {
+				validateErrors = append(validateErrors, validErr)
 			}
 		case "in":
-			if err := validateIn(value, field); err != nil {
-				validateErrors = append(validateErrors, err)
+			validErr, runtimeErr := validateIn(value, field)
+			if runtimeErr != nil {
+				return []error{}, runtimeErr
+			}
+			if validErr != nil {
+				validateErrors = append(validateErrors, validErr)
 			}
 		default:
-			validateErrors = append(validateErrors, fmt.Errorf("unsupported rule: %s", key))
+			return []error{}, fmt.Errorf("unsupported rule: %s", key)
 		}
 	}
-	return validateErrors
+	return validateErrors, nil
 }
 
 // validateLen validates the length of the field.
-func validateLen(value string, field string) error {
+func validateLen(value string, field string) (validErr error, runtimeErr error) {
 	allowedLength, err := strconv.Atoi(value)
 	if err != nil {
-		return fmt.Errorf("invalid value for len rule: %s", value)
+		runtimeErr = fmt.Errorf("invalid value for len rule: %s", value)
+		return
 	}
 	if len(field) != allowedLength {
-		return fmt.Errorf("expected length %d, got %d", allowedLength, len(field))
+		validErr = fmt.Errorf("expected length %d, got %d", allowedLength, len(field))
 	}
-	return nil
+	return
 }
 
 // validateMin validates the minimum value of the field.
-func validateMin(value string, field int) error {
+func validateMin(value string, field int) (validErr error, runtimeErr error) {
 	valueInt, err := strconv.Atoi(value)
 	if err != nil {
-		return fmt.Errorf("invalid value for min rule: %s", value)
+		runtimeErr = err
+		return
 	}
 	if field < valueInt {
-		return fmt.Errorf("allowed minimum %s, got %d", value, field)
+		validErr = fmt.Errorf("allowed minimum %s, got %d", value, field)
 	}
-	return nil
+	return
 }
 
 // validateMax validates the maximum value of the field.
-func validateMax(value string, field int) error {
+func validateMax(value string, field int) (validErr error, runtimeErr error) {
 	valueInt, err := strconv.Atoi(value)
 	if err != nil {
-		return fmt.Errorf("invalid value for max rule: %s", value)
+		runtimeErr = err
+		return
 	}
 	if field > valueInt {
-		return fmt.Errorf("allowed maximum %s, got %d", value, field)
+		validErr = fmt.Errorf("allowed maximum %s, got %d", value, field)
 	}
-	return nil
+	return
 }
 
 // validateRegexp validates the field using a regular expression.
-func validateRegexp(value string, field string) error {
+func validateRegexp(value string, field string) (validErr error, runtimeErr error) {
 	re, err := regexp.Compile(value)
 	if err != nil {
-		return fmt.Errorf("invalid regular expression: %w", err)
+		runtimeErr = err
+		return
 	}
 	if !re.MatchString(field) {
-		return fmt.Errorf("%q invalid email", field)
+		validErr = fmt.Errorf("%q invalid email", field)
 	}
-	return nil
+	return
 }
 
 // validateIn validates the field against a list of allowed values.
-func validateIn(value string, field interface{}) error {
+func validateIn(value string, field interface{}) (validErr error, runtimeErr error) {
 	switch v := field.(type) {
 	case string:
 		field = v
 	case int:
 		field = strconv.Itoa(v)
 	default:
-		return fmt.Errorf("unsupported type %T", field)
+		runtimeErr = fmt.Errorf("unsupported type %T", field)
+		return
 	}
 	validValues := strings.Split(value, ",")
 	found := false
@@ -229,7 +264,7 @@ func validateIn(value string, field interface{}) error {
 		}
 	}
 	if !found {
-		return fmt.Errorf("%q not in allowed values %q", field, value)
+		validErr = fmt.Errorf("%q not in allowed values %q", field, value)
 	}
-	return nil
+	return
 }
