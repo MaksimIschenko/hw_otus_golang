@@ -28,7 +28,7 @@ func GetDomainStat(r io.Reader, domain string) (DomainStat, error) {
 
 func GetUserEmails(r io.Reader, domain string) (LightUsers, error) {
 	scanner := bufio.NewScanner(r)
-	var result LightUsers
+	result := make(LightUsers, 0)
 
 	for scanner.Scan() {
 		line := scanner.Bytes()
@@ -47,7 +47,7 @@ func GetUserEmails(r io.Reader, domain string) (LightUsers, error) {
 	}
 
 	if err := scanner.Err(); err != nil {
-		return nil, err
+		return result, err
 	}
 
 	return result, nil
