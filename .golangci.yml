@@ -21,6 +21,7 @@ linters-settings:
           - github.com/MaksimIschenko/hw_otus_golang/hw08_envdir_tool/executor
           - github.com/MaksimIschenko/hw_otus_golang/hw09_struct_validator/validator
           - github.com/MaksimIschenko/hw_otus_golang/hw10_program_optimization/stats
+          - github.com/MaksimIschenko/hw_otus_golang/hw11_telnet_client/telnet
           - github.com/spf13/pflag
       Test:
         files:
